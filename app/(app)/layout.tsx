@@ -21,13 +21,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single() as { data: Profile | null }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 md:flex">
       <SideNav
         companyName={profile?.company_name ?? 'AccessScope'}
         displayName={profile?.display_name ?? user.email ?? ''}
         logoUrl={profile?.logo_url ?? null}
       />
-      <main className="flex-1 min-w-0 p-6 lg:p-8">
+      {/* pt-14 offsets the fixed mobile top bar; removed on md+ */}
+      <main className="flex-1 min-w-0 pt-14 md:pt-0 p-4 md:p-6 lg:p-8">
         {children}
       </main>
     </div>
