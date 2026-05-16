@@ -1,0 +1,170 @@
+import type { ModificationKey, RuleDefinition } from './types'
+
+export const PRICING_TABLES: Record<ModificationKey, RuleDefinition> = {
+  // ─── Bathroom ──────────────────────────────────────────────────────────────
+
+  grab_bar_tub: {
+    key: 'grab_bar_tub',
+    description: 'Grab bar — tub surround',
+    scopeTemplate: 'Install {qty} ADA-compliant grab bar(s) at tub surround per ANSI 117.1 placement guidelines. Verify blocking/substrate before installation.',
+    customerTemplate: 'We will install {qty} sturdy grab bar(s) next to your tub to help you safely get in and out.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 28, standard: 65, premium: 145 },
+    laborHoursPerUnit:   { economy: 1.5, standard: 2.0, premium: 2.5 },
+    generatesDemoLine: false,
+    permitLineDescription: undefined,
+    requiredMeasurements: [],
+  },
+
+  grab_bar_shower: {
+    key: 'grab_bar_shower',
+    description: 'Grab bar — shower',
+    scopeTemplate: 'Install {qty} ADA-compliant grab bar(s) in shower enclosure. Verify blocking/substrate before installation.',
+    customerTemplate: 'We will install {qty} grab bar(s) inside your shower for stability while bathing.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 28, standard: 65, premium: 145 },
+    laborHoursPerUnit:   { economy: 1.5, standard: 2.0, premium: 2.5 },
+    generatesDemoLine: false,
+    requiredMeasurements: [],
+  },
+
+  grab_bar_toilet: {
+    key: 'grab_bar_toilet',
+    description: 'Grab bar — toilet area',
+    scopeTemplate: 'Install {qty} ADA-compliant grab bar(s) at toilet area. Verify blocking/substrate before installation.',
+    customerTemplate: 'We will install {qty} grab bar(s) beside your toilet to help with sitting and standing.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 28, standard: 65, premium: 145 },
+    laborHoursPerUnit:   { economy: 1.5, standard: 2.0, premium: 2.5 },
+    generatesDemoLine: false,
+    requiredMeasurements: [],
+  },
+
+  shower_conversion: {
+    key: 'shower_conversion',
+    description: 'Tub-to-shower conversion (curbless)',
+    scopeTemplate: 'Remove existing tub unit. Install curbless / low-threshold shower with tile surround, linear drain, and handheld showerhead. Includes waterproofing membrane, backer board, and tile work.',
+    customerTemplate: 'We will remove your tub and install a step-free shower that is much easier and safer to enter and exit.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 1800, standard: 3200, premium: 5500 },
+    laborHoursPerUnit:   { economy: 16, standard: 20, premium: 28 },
+    generatesDemoLine: true,
+    demoLaborHours: 8,
+    permitLineDescription: 'Permit — Bathroom Renovation / Plumbing',
+    requiredMeasurements: [],
+  },
+
+  non_slip_floor: {
+    key: 'non_slip_floor',
+    description: 'Non-slip flooring',
+    scopeTemplate: 'Remove existing bathroom flooring. Install {qty} SF of non-slip tile with coefficient of friction ≥ 0.60 (wet). Includes adhesive, grout, and transition strips.',
+    customerTemplate: 'We will replace your bathroom floor with slip-resistant tile that meets safety standards for wet areas.',
+    defaultUnit: 'sf',
+    materialCostPerUnit: { economy: 4.5, standard: 8, premium: 16 },
+    laborHoursPerUnit:   { economy: 0.25, standard: 0.35, premium: 0.45 },
+    generatesDemoLine: true,
+    demoLaborHours: 0.1,
+    requiredMeasurements: ['floor_area_sf'],
+  },
+
+  door_widening_bathroom: {
+    key: 'door_widening_bathroom',
+    description: 'Door widening — bathroom (36")',
+    scopeTemplate: 'Widen bathroom doorway to minimum 36" clear opening. Includes framing modification, new door and hardware, patching, and painting.',
+    customerTemplate: 'We will widen your bathroom doorway to 36 inches so a wheelchair or walker can pass through easily.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 420, standard: 680, premium: 1100 },
+    laborHoursPerUnit:   { economy: 8, standard: 10, premium: 14 },
+    generatesDemoLine: false,
+    permitLineDescription: 'Permit — Structural / Door Modification',
+    requiredMeasurements: [],
+  },
+
+  toilet_riser: {
+    key: 'toilet_riser',
+    description: 'Comfort-height toilet / raised seat',
+    scopeTemplate: 'Install {qty} comfort-height toilet (17"–19" seat height) or add raised toilet seat with locking arm brackets.',
+    customerTemplate: 'We will install {qty} raised toilet seat or comfort-height toilet to make sitting and standing easier.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 85, standard: 220, premium: 480 },
+    laborHoursPerUnit:   { economy: 1, standard: 2, premium: 3 },
+    generatesDemoLine: false,
+    requiredMeasurements: [],
+  },
+
+  lighting_upgrade: {
+    key: 'lighting_upgrade',
+    description: 'Lighting upgrade — bathroom',
+    scopeTemplate: 'Install {qty} additional fixture(s) or upgrade existing fixtures to improve illumination. Minimum 50 foot-candles at task areas.',
+    customerTemplate: 'We will improve the bathroom lighting to make it easier to see and reduce fall risk.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 55, standard: 120, premium: 280 },
+    laborHoursPerUnit:   { economy: 1.5, standard: 2, premium: 3 },
+    generatesDemoLine: false,
+    requiredMeasurements: [],
+  },
+
+  // ─── Entryway ──────────────────────────────────────────────────────────────
+
+  exterior_ramp: {
+    key: 'exterior_ramp',
+    description: 'Exterior accessibility ramp',
+    scopeTemplate: 'Construct exterior accessibility ramp ({qty} SF) per ADA slope requirements (max 1:12), with non-slip surface and edge protection. Includes footings, framing, decking, and handrails.',
+    customerTemplate: 'We will build a gently sloped ramp to your entry so you can enter and exit your home without steps.',
+    defaultUnit: 'sf',
+    materialCostPerUnit: { economy: 42, standard: 68, premium: 110 },
+    laborHoursPerUnit:   { economy: 0.5, standard: 0.65, premium: 0.9 },
+    generatesDemoLine: false,
+    permitLineDescription: 'Permit — Residential Ramp / Deck Construction',
+    requiredMeasurements: ['ramp_length_ft', 'ramp_width_ft'],
+  },
+
+  handrail: {
+    key: 'handrail',
+    description: 'Handrail / grab rail',
+    scopeTemplate: 'Install {qty} LF of continuous handrail at entry path or steps. Graspable profile, 34"–38" height, with returns at both ends.',
+    customerTemplate: 'We will install {qty} feet of handrail along your entry path so you have something to hold onto.',
+    defaultUnit: 'lf',
+    materialCostPerUnit: { economy: 18, standard: 38, premium: 75 },
+    laborHoursPerUnit:   { economy: 0.3, standard: 0.4, premium: 0.6 },
+    generatesDemoLine: false,
+    requiredMeasurements: ['handrail_length_lf'],
+  },
+
+  threshold_reducer: {
+    key: 'threshold_reducer',
+    description: 'Threshold reducer / transition strip',
+    scopeTemplate: 'Install {qty} threshold reducer(s) at entry transition point(s) to create a flush or near-flush transition (max ¼" vertical, ¼"–½" beveled).',
+    customerTemplate: 'We will add a low-profile ramp strip at your doorway thresholds to eliminate trip hazards.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 18, standard: 45, premium: 95 },
+    laborHoursPerUnit:   { economy: 0.5, standard: 0.75, premium: 1 },
+    generatesDemoLine: false,
+    requiredMeasurements: [],
+  },
+
+  door_widening_entry: {
+    key: 'door_widening_entry',
+    description: 'Door widening — entry (36")',
+    scopeTemplate: 'Widen entry doorway to minimum 36" clear opening. Includes framing modification, new door and hardware, patching, and painting.',
+    customerTemplate: 'We will widen your front door to 36 inches so a wheelchair or walker can pass through easily.',
+    defaultUnit: 'each',
+    materialCostPerUnit: { economy: 480, standard: 780, premium: 1300 },
+    laborHoursPerUnit:   { economy: 8, standard: 11, premium: 15 },
+    generatesDemoLine: false,
+    permitLineDescription: 'Permit — Structural / Door Modification',
+    requiredMeasurements: [],
+  },
+
+  landing_pad: {
+    key: 'landing_pad',
+    description: 'Landing pad / level platform',
+    scopeTemplate: 'Construct level landing pad ({qty} SF) at entry door per ADA requirements (minimum 60" × 60", slope ≤ 2%). Includes concrete or compacted gravel base and surface finish.',
+    customerTemplate: 'We will build a level platform at your door so you have safe footing when entering and exiting.',
+    defaultUnit: 'sf',
+    materialCostPerUnit: { economy: 12, standard: 22, premium: 42 },
+    laborHoursPerUnit:   { economy: 0.2, standard: 0.3, premium: 0.45 },
+    generatesDemoLine: false,
+    requiredMeasurements: ['landing_area_sf'],
+  },
+}
