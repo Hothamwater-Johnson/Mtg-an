@@ -155,7 +155,7 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                   id={`check_${key}`}
                   checked={mod.selected}
                   onChange={() => toggleSelected(key)}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor={`check_${key}`} className="flex-1 cursor-pointer min-w-0">
                   <p className="text-sm font-medium text-gray-900">{rule.description}</p>
@@ -165,9 +165,9 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                   <button
                     type="button"
                     onClick={() => update(key, { expanded: !mod.expanded })}
-                    className="text-gray-400 hover:text-gray-600 shrink-0 p-0.5"
+                    className="text-gray-400 hover:text-gray-600 shrink-0 p-2 -mr-2"
                   >
-                    {mod.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {mod.expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </button>
                 )}
               </div>
@@ -178,12 +178,13 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                   {/* Material tier */}
                   <div className="space-y-2">
                     <Label className="text-xs">Material tier</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* Stack on mobile, 3-col on sm+ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {MATERIAL_TIERS.map((t) => (
                         <label
                           key={t.value}
                           className={cn(
-                            'flex flex-col items-center rounded-lg border p-2.5 cursor-pointer text-center transition-colors',
+                            'flex sm:flex-col items-center sm:items-center gap-3 sm:gap-0 rounded-lg border p-3 cursor-pointer transition-colors',
                             mod.tier === t.value
                               ? 'border-blue-500 bg-blue-50 text-blue-700'
                               : 'border-gray-200 hover:border-gray-300 text-gray-600'
@@ -197,9 +198,9 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                             onChange={() => update(key, { tier: t.value })}
                             className="sr-only"
                           />
-                          <span className="text-xs font-semibold">{t.label}</span>
-                          <span className="text-[10px] text-gray-400 mt-0.5">{t.hint}</span>
-                          <span className="text-xs font-mono mt-1 text-gray-700">
+                          <span className="text-sm font-semibold sm:text-xs">{t.label}</span>
+                          <span className="text-xs text-gray-400 sm:mt-0.5">{t.hint}</span>
+                          <span className="text-xs font-mono sm:mt-1 text-gray-700 ml-auto sm:ml-0">
                             ${rule.materialCostPerUnit[t.value]}/{rule.defaultUnit}
                           </span>
                         </label>
