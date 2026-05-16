@@ -210,7 +210,7 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
 
                   {/* Quantity */}
                   {needsQty && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor={`qty_${key}`} className="text-xs">
                           Quantity ({rule.defaultUnit})
@@ -243,7 +243,7 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                     <Label className="text-xs">Flags</Label>
                     <div className="flex flex-wrap gap-2">
                       <label className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs cursor-pointer transition-colors',
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs cursor-pointer transition-colors',
                         mod.permitRequired ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       )}>
                         <input
@@ -258,7 +258,7 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
                         <label
                           key={f.value}
                           className={cn(
-                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs cursor-pointer transition-colors',
+                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs cursor-pointer transition-colors',
                             mod.riskFlags.includes(f.value)
                               ? 'border-red-300 bg-red-50 text-red-700'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -290,8 +290,8 @@ export function AreaModForm({ modificationKeys, existingMods, action, backHref, 
 
                   {/* Cost overrides (collapsed by default) */}
                   <details className="text-xs">
-                    <summary className="cursor-pointer text-gray-400 hover:text-gray-600 select-none">Override pricing</summary>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
+                    <summary className="cursor-pointer text-gray-400 hover:text-gray-600 select-none py-2">Override pricing</summary>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                       <div className="space-y-1.5">
                         <Label className="text-xs">Unit material cost ($)</Label>
                         <Input
