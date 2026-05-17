@@ -190,26 +190,103 @@ CRON_SECRET=
 
 ## Local development
 
+### One codebase, three environments
+
+The same code runs locally, in staging, and in production. **Going live = swapping env vars only — no code changes required.**
+
+| | Local dev | Staging | Production |
+|---|---|---|---|
+| **Supabase** | Local Docker (`localhost:54321`) | Free-tier cloud project | Paid cloud project |
+| **Stripe** | `sk_test_...` + `stripe listen` | `sk_test_...` | `sk_live_...` |
+| **Email** | Console log (no API calls) | Resend test domain | Resend verified domain |
+| **Hosting** | `npm run dev` | Vercel preview | Vercel production |
+
+### Closed-environment startup sequence
+
+Requires: [Docker Desktop](https://www.docker.com/products/docker-desktop/), [Stripe CLI](https://stripe.com/docs/stripe-cli), `jq` (optional, for cron output).
+
 ```bash
-# 1. Install dependencies
-npm install
+# Terminal 1 — Supabase local stack (Postgres + Auth + Storage + Studio)
+npm run supabase:start
+# Prints API URL, anon key, service role key — copy into .env.local
 
-# 2. Set up environment
+# Terminal 2 — Next.js dev server
 cp .env.local.example .env.local
-# fill in Supabase URL + keys (local CLI or hosted project)
-
-# 3. Apply database migrations
-npx supabase db push
-
-# 4. Regenerate DB types (after any schema change)
-npx supabase gen types typescript --local > types/database.ts
-
-# 5. Start dev server
+# Fill in the keys printed by supabase:start above
+# Set NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Set CRON_SECRET=any-32-char-string
 npm run dev      # http://localhost:3000
 
-# Other commands
+# Terminal 3 — Stripe webhook forwarder (only needed for billing tests)
+npm run stripe:listen
+# Copy the whsec_ secret into .env.local → STRIPE_WEBHOOK_SECRET, then restart npm run dev
+```
+
+### Apply migrations + seed data
+
+```bash
+# After supabase:start, push all migrations
+npx supabase db push
+
+# Seed a test client row (see supabase/seed.sql for instructions)
+# After signing up in the UI, update the placeholder contractor_id:
+# UPDATE clients SET contractor_id = '<your-user-id>' WHERE email = 'test-client@example.com';
+
+# To wipe and start fresh:
+npm run supabase:reset   # reapplies all migrations + seed.sql
+```
+
+### Local service URLs
+
+| Service | URL |
+|---|---|
+| App | http://localhost:3000 |
+| Supabase Studio | http://localhost:54323 |
+| Inbucket (email catcher) | http://localhost:54324 |
+| Supabase API | http://localhost:54321 |
+
+Magic links and signup confirmation emails are captured by Inbucket — no real email is sent.
+
+### Dev email behavior
+
+When `NODE_ENV=development`, `sendEmail()` skips Resend entirely and logs the email to the terminal:
+
+```
+📧 [DEV EMAIL] { to: 'client@example.com', subject: 'Your proposal is ready' }
+--- HTML preview (first 500 chars) ---
+...
+```
+
+The `email_logs` row is still inserted to Supabase, so the full code path runs. No Resend key needed for local dev.
+
+### Trigger the cron job manually
+
+```bash
+npm run cron:trigger
+# → {"processed":N,"sent":N,"failed":0}
+```
+
+### What works locally
+
+| Feature | Works? | Notes |
+|---|---|---|
+| Signup / login | ✅ | Email confirm disabled; magic links in Inbucket |
+| Client CRUD | ✅ | |
+| Full job wizard | ✅ | |
+| Scope generation | ✅ | |
+| PDF generation | ✅ | |
+| Email send | ✅ | Logged to terminal; `email_logs` row inserted |
+| Stripe checkout | ✅ | Test card `4242 4242 4242 4242`; requires `stripe:listen` |
+| Stripe webhook | ✅ | Requires `stripe:listen` in a separate terminal |
+| Cron follow-up | ✅ | `npm run cron:trigger` |
+| Logo / PDF upload | ✅ | Supabase local Storage |
+
+### Other commands
+
+```bash
 npm run build    # production build check
 npm run lint     # ESLint
+npx supabase gen types typescript --local > types/database.ts  # regenerate DB types
 ```
 
 > **Note on `types/database.ts`:** This file is currently a hand-written stub that keeps TypeScript happy without requiring a live Supabase instance. Replace it with the generated version (`npx supabase gen types typescript --local > types/database.ts`) to get full type safety and remove the `as any` casts throughout the codebase.

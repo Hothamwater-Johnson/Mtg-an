@@ -17,6 +17,14 @@ export interface SendEmailResult {
 
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
   const from = opts.from ?? process.env.RESEND_FROM_EMAIL ?? 'proposals@accessscope.app'
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('\n📧 [DEV EMAIL]', { to: opts.to, subject: opts.subject, from })
+    console.log('--- HTML preview (first 500 chars) ---')
+    console.log(opts.html.slice(0, 500))
+    return { id: `dev-${Date.now()}`, error: null }
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from,
