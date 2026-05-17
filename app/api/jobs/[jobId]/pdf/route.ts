@@ -57,6 +57,24 @@ export async function POST(
     )
   }
 
+  // ── Rate limit: max 1 PDF generation per job per 30s ─────────────────────
+  const thirtySecondsAgo = new Date(Date.now() - 30_000).toISOString()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentPacket } = await (supabase as any)
+    .from('proposal_packets')
+    .select('id')
+    .eq('job_id', jobId)
+    .gte('generated_at', thirtySecondsAgo)
+    .limit(1)
+    .maybeSingle() as { data: { id: string } | null }
+
+  if (recentPacket) {
+    return NextResponse.json(
+      { error: 'Please wait 30 seconds before generating another PDF for this job.' },
+      { status: 429 }
+    )
+  }
+
   // ── Fetch job + client ────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: job } = await (supabase as any)

@@ -15,12 +15,18 @@ export async function POST(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: job } = await (supabase as any)
     .from('jobs')
-    .select('id, contractor_id')
+    .select('id, contractor_id, updated_at')
     .eq('id', jobId)
     .eq('contractor_id', user.id)
-    .single()
+    .single() as { data: { id: string; contractor_id: string; updated_at: string } | null }
 
   if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+
+  // Rate limit: 5s cooldown using jobs.updated_at (updated after each scope gen)
+  const fiveSecondsAgo = new Date(Date.now() - 5_000).toISOString()
+  if (job.updated_at && job.updated_at > fiveSecondsAgo) {
+    return NextResponse.json({ error: 'Please wait before regenerating scope.' }, { status: 429 })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile } = await (supabase as any)
@@ -137,6 +143,10 @@ export async function POST(
     const { error } = await (supabase as any).from('scope_line_items').insert(insertRows)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // Touch jobs.updated_at so the rate limit cooldown works next request
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('jobs').update({ updated_at: new Date().toISOString() }).eq('id', jobId)
 
   return NextResponse.json({ count: insertRows.length })
 }
