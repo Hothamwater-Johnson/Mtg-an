@@ -33,6 +33,30 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // ── Subscription + credit gate ────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sub } = await (supabase as any)
+    .from('subscriptions')
+    .select('status, plan_id, packet_credits')
+    .eq('contractor_id', user.id)
+    .maybeSingle() as { data: { status: string; plan_id: string | null; packet_credits: number } | null }
+
+  const activeStatuses = ['active', 'trialing']
+  if (!sub || !activeStatuses.includes(sub.status)) {
+    return NextResponse.json(
+      { error: 'An active subscription is required to generate proposals. Please visit /billing to subscribe.' },
+      { status: 402 }
+    )
+  }
+
+  const isUnlimited = sub.plan_id === 'team_monthly'
+  if (!isUnlimited && sub.packet_credits <= 0) {
+    return NextResponse.json(
+      { error: 'No proposal credits remaining. Purchase more at /billing.' },
+      { status: 402 }
+    )
+  }
+
   // ── Fetch job + client ────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: job } = await (supabase as any)
@@ -231,6 +255,15 @@ export async function POST(
   if (insertError) {
     console.error('Packet insert error:', insertError)
     return NextResponse.json({ error: 'Failed to record packet.' }, { status: 500 })
+  }
+
+  // ── Decrement credit (non-unlimited plans only) ───────────────────────────
+  if (!isUnlimited) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('subscriptions')
+      .update({ packet_credits: sub.packet_credits - 1 })
+      .eq('contractor_id', user.id)
   }
 
   // ── Create signed URL (1 hour) ────────────────────────────────────────────

@@ -23,7 +23,8 @@ export function PreviewClient({ jobId, hasExisting }: Props) {
       const res = await fetch(`/api/jobs/${jobId}/pdf`, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) {
-        setError(json.error ?? 'PDF generation failed. Please try again.')
+        const suffix = res.status === 402 ? ' Visit /billing to manage your plan.' : ''
+        setError((json.error ?? 'PDF generation failed. Please try again.') + suffix)
       } else {
         setFreshUrl(json.signedUrl)
         router.refresh()
