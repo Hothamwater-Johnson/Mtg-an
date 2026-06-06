@@ -24,7 +24,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override { return 8.0; }
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
@@ -43,12 +43,23 @@ private:
     juce::dsp::Oversampling<float> oversampling { 2, 2,
         juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR };
 
-    // Tone LP filter (one instance handles all channels via ProcessSpec)
+    // Tone LP filter
     juce::dsp::StateVariableTPTFilter<float> toneFilter;
+
+    // ── Atmosphere ───────────────────────────────────────────────────────────
+
+    // Pitch drift: Lagrange-interpolated vibrato, L/R LFOs 90° apart
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> driftDelay;
+    float lfoPhase[2] = { 0.0f, 0.25f };
+
+    // Haze: heavy LP darkening
+    juce::dsp::StateVariableTPTFilter<float> hazeFilter;
+
+    // Reverb: Freeverb for cavernous eerie tails
+    juce::dsp::Reverb reverb;
 
     double currentSampleRate = 44100.0;
 
-    // Returns shaped sample; driveNorm is [0..1]
     static float applyWaveshaper(float x, int mode, float driveNorm) noexcept;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DistortionAudioProcessor)

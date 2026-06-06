@@ -68,7 +68,11 @@ DistortionAudioProcessorEditor::DistortionAudioProcessorEditor(DistortionAudioPr
       driveAtt(p.apvts, "drive", driveKnob.slider),
       toneAtt (p.apvts, "tone",  toneKnob.slider),
       levelAtt(p.apvts, "level", levelKnob.slider),
-      mixAtt  (p.apvts, "mix",   mixKnob.slider)
+      mixAtt  (p.apvts, "mix",   mixKnob.slider),
+      spaceAtt(p.apvts, "space", spaceKnob.slider),
+      decayAtt(p.apvts, "decay", decayKnob.slider),
+      driftAtt(p.apvts, "drift", driftKnob.slider),
+      hazeAtt (p.apvts, "haze",  hazeKnob.slider)
 {
     setLookAndFeel(&laf);
 
@@ -77,22 +81,26 @@ DistortionAudioProcessorEditor::DistortionAudioProcessorEditor(DistortionAudioPr
     setupKnob(levelKnob, "LEVEL");
     setupKnob(mixKnob,   "MIX");
 
+    setupKnob(spaceKnob, "SPACE");
+    setupKnob(decayKnob, "DECAY");
+    setupKnob(driftKnob, "DRIFT");
+    setupKnob(hazeKnob,  "HAZE");
+
     for (auto& name : { "Soft", "Hard", "Overdrive", "Fuzz", "Fold", "Crush" })
         modeBox.addItem(name, modeBox.getNumItems() + 1);
 
-    // Must be created AFTER items are added so the initial selection syncs
     modeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         p.apvts, "mode", modeBox);
 
     modeLabel.setText("MODE", juce::dontSendNotification);
     modeLabel.setJustificationType(juce::Justification::centred);
-    modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xff666666));
+    modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xff555555));
     modeLabel.setFont(juce::Font("Helvetica", 10.0f, juce::Font::plain));
 
     addAndMakeVisible(modeBox);
     addAndMakeVisible(modeLabel);
 
-    setSize(440, 270);
+    setSize(440, 370);
 }
 
 DistortionAudioProcessorEditor::~DistortionAudioProcessorEditor()
@@ -115,46 +123,70 @@ void DistortionAudioProcessorEditor::setupKnob(LabeledKnob& k, const juce::Strin
 void DistortionAudioProcessorEditor::paint(juce::Graphics& g)
 {
     // Dark gradient background
-    juce::ColourGradient bg(juce::Colour(0xff1f1f1f), 0.0f, 0.0f,
-                            juce::Colour(0xff0f0f0f), 0.0f, (float)getHeight(), false);
+    juce::ColourGradient bg(juce::Colour(0xff1a1a1a), 0.0f, 0.0f,
+                            juce::Colour(0xff0a0a0a), 0.0f, (float)getHeight(), false);
     g.setGradientFill(bg);
     g.fillAll();
 
-    // Plugin title
+    const float w = (float)getWidth();
+
+    // ── Plugin title ──────────────────────────────────────────────────────
     g.setColour(juce::Colour(0xffff6b35));
     g.setFont(juce::Font("Helvetica", 22.0f, juce::Font::bold));
-    g.drawText("DRIVE", 0, 12, getWidth(), 28, juce::Justification::centred);
+    g.drawText("DRIVE", 0, 12, (int)w, 28, juce::Justification::centred);
 
-    g.setColour(juce::Colour(0xff444444));
+    g.setColour(juce::Colour(0xff3a3a3a));
     g.setFont(juce::Font("Helvetica", 10.0f, juce::Font::plain));
-    g.drawText("DISTORTION", 0, 36, getWidth(), 16, juce::Justification::centred);
+    g.drawText("DISTORTION", 0, 36, (int)w, 16, juce::Justification::centred);
 
-    // Separator
-    g.setColour(juce::Colour(0xff2a2a2a));
-    g.drawLine(20.0f, 58.0f, (float)getWidth() - 20.0f, 58.0f, 1.0f);
+    g.setColour(juce::Colour(0xff252525));
+    g.drawLine(20.0f, 57.0f, w - 20.0f, 57.0f, 1.0f);
+
+    // ── Distortion section label ──────────────────────────────────────────
+    g.setColour(juce::Colour(0xff404040));
+    g.setFont(juce::Font("Helvetica", 9.0f, juce::Font::plain));
+    g.drawText("DISTORTION", 20, 62, 120, 12, juce::Justification::centredLeft);
+
+    // ── Atmosphere section ────────────────────────────────────────────────
+    g.setColour(juce::Colour(0xff252525));
+    g.drawLine(20.0f, 182.0f, w - 20.0f, 182.0f, 1.0f);
+
+    // Slightly blue-grey label for the eerie atmosphere section
+    g.setColour(juce::Colour(0xff4a6888));
+    g.setFont(juce::Font("Helvetica", 9.0f, juce::Font::plain));
+    g.drawText("ATMOSPHERE", 20, 186, 120, 12, juce::Justification::centredLeft);
 }
 
 void DistortionAudioProcessorEditor::resized()
 {
     const int w        = getWidth();
     const int knobSize = 80;
-    const int knobY    = 65;
     const int labelH   = 18;
-    const int spacing  = w / 5;
+    const int spacing  = w / 5;  // 88px
 
-    auto placeKnob = [&](LabeledKnob& k, int idx) {
+    auto placeKnob = [&](LabeledKnob& k, int idx, int rowY) {
         const int cx = spacing * (idx + 1);
-        k.slider.setBounds(cx - knobSize / 2, knobY, knobSize, knobSize);
-        k.label.setBounds(cx - 40, knobY + knobSize + 4, 80, labelH);
+        k.slider.setBounds(cx - knobSize / 2, rowY, knobSize, knobSize);
+        k.label.setBounds (cx - 40, rowY + knobSize + 4, 80, labelH);
     };
 
-    placeKnob(driveKnob, 0);
-    placeKnob(toneKnob,  1);
-    placeKnob(levelKnob, 2);
-    placeKnob(mixKnob,   3);
+    // Row 1 — Distortion (y=76, below "DISTORTION" section label)
+    placeKnob(driveKnob, 0, 76);
+    placeKnob(toneKnob,  1, 76);
+    placeKnob(levelKnob, 2, 76);
+    placeKnob(mixKnob,   3, 76);
 
-    const int modeY = knobY + knobSize + labelH + 18;
+    // Row 2 — Atmosphere (y=200, below separator + "ATMOSPHERE" label)
+    placeKnob(spaceKnob, 0, 200);
+    placeKnob(decayKnob, 1, 200);
+    placeKnob(driftKnob, 2, 200);
+    placeKnob(hazeKnob,  3, 200);
+
+    // Mode selector centered below both rows
+    // Row2 bottom of labels: 200 + 80 + 4 + 18 = 302; add 14px gap → 316
+    const int modeY = 316;
     const int modeW = 160;
     modeLabel.setBounds(w / 2 - modeW / 2, modeY,      modeW, 18);
     modeBox.setBounds  (w / 2 - modeW / 2, modeY + 20, modeW, 28);
+    // Bottom: 316 + 20 + 28 = 364 → fits in 370px
 }

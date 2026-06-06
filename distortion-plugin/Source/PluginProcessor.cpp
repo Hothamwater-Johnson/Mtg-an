@@ -5,6 +5,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DistortionAudioProcessor::cr
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
+    // ── Distortion ───────────────────────────────────────────────────────────
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "drive", 1 }, "Drive",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
@@ -25,6 +26,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout DistortionAudioProcessor::cr
         juce::ParameterID { "mode", 1 }, "Mode",
         juce::StringArray { "Soft", "Hard", "Overdrive", "Fuzz", "Fold", "Crush" },
         0));
+
+    // ── Atmosphere ───────────────────────────────────────────────────────────
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "space", 1 }, "Space",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.25f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "decay", 1 }, "Decay",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "drift", 1 }, "Drift",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.15f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "haze", 1 }, "Haze",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.3f));
 
     return layout;
 }
@@ -62,6 +80,21 @@ void DistortionAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     toneFilter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
     toneFilter.setCutoffFrequency(20000.0f);
     toneFilter.reset();
+
+    // Drift: 25ms max delay (10ms centre + 8ms depth + headroom)
+    driftDelay.setMaximumDelayInSamples((int)(sampleRate * 0.025) + 1);
+    driftDelay.prepare(spec);
+    driftDelay.reset();
+    lfoPhase[0] = 0.0f;
+    lfoPhase[1] = 0.25f;
+
+    hazeFilter.prepare(spec);
+    hazeFilter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+    hazeFilter.setCutoffFrequency(20000.0f);
+    hazeFilter.reset();
+
+    reverb.prepare(spec);
+    reverb.reset();
 }
 
 void DistortionAudioProcessor::releaseResources()
@@ -128,22 +161,25 @@ void DistortionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     const float levelDb   = *apvts.getRawParameterValue("level");
     const float mixNorm   = *apvts.getRawParameterValue("mix");
     const int   mode      = (int)*apvts.getRawParameterValue("mode");
+    const float spaceNorm = *apvts.getRawParameterValue("space");
+    const float decayNorm = *apvts.getRawParameterValue("decay");
+    const float driftNorm = *apvts.getRawParameterValue("drift");
+    const float hazeNorm  = *apvts.getRawParameterValue("haze");
 
     const int numCh      = buffer.getNumChannels();
     const int numSamples = buffer.getNumSamples();
 
-    // Tone: 300 Hz (dark) → 20 kHz (bright) on a log curve
-    toneFilter.setCutoffFrequency(300.0f * std::pow(66.67f, toneNorm));
-
-    // Capture dry for mix blend
+    // Capture dry for global mix blend
     juce::AudioBuffer<float> dry(numCh, numSamples);
     dry.makeCopyOf(buffer);
 
-    // Upsample
+    // ── Distortion ───────────────────────────────────────────────────────────
+
+    toneFilter.setCutoffFrequency(300.0f * std::pow(66.67f, toneNorm));
+
     juce::dsp::AudioBlock<float> block(buffer);
     auto osBlock = oversampling.processSamplesUp(block);
 
-    // Waveshape at 4× rate (anti-aliasing)
     for (size_t ch = 0; ch < osBlock.getNumChannels(); ++ch)
     {
         auto* data = osBlock.getChannelPointer(ch);
@@ -151,20 +187,68 @@ void DistortionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             data[i] = applyWaveshaper(data[i], mode, driveNorm);
     }
 
-    // Downsample
     oversampling.processSamplesDown(block);
 
-    // Tone LP filter
     {
         juce::dsp::ProcessContextReplacing<float> ctx(block);
         toneFilter.process(ctx);
     }
 
+    // ── Atmosphere ───────────────────────────────────────────────────────────
+
+    // Pitch drift: sinusoidal vibrato, L/R 90° out of phase for stereo uncanniness
+    if (driftNorm > 0.001f)
+    {
+        const float driftRate     = 0.05f + driftNorm * 0.3f;   // 0.05 – 0.35 Hz
+        const float driftDepthMs  = driftNorm * 8.0f;            // 0 – 8 ms
+        const float centreMs      = 10.0f;
+        const float phaseInc      = driftRate / (float)currentSampleRate;
+
+        for (int ch = 0; ch < numCh; ++ch)
+        {
+            auto* data = buffer.getWritePointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                const float lfoVal      = std::sin(lfoPhase[ch] * juce::MathConstants<float>::twoPi);
+                const float delaySamples = (centreMs + lfoVal * driftDepthMs)
+                                           * 0.001f * (float)currentSampleRate;
+                driftDelay.pushSample(ch, data[i]);
+                data[i] = driftDelay.popSample(ch, delaySamples);
+
+                lfoPhase[ch] += phaseInc;
+                if (lfoPhase[ch] >= 1.0f) lfoPhase[ch] -= 1.0f;
+            }
+        }
+    }
+
+    // Haze: LP filter from 20 kHz (clear) down to 200 Hz (muffled)
+    hazeFilter.setCutoffFrequency(20000.0f * std::pow(0.01f, hazeNorm));
+    {
+        juce::dsp::ProcessContextReplacing<float> ctx(block);
+        hazeFilter.process(ctx);
+    }
+
     // Output gain
     buffer.applyGain(juce::Decibels::decibelsToGain(levelDb));
 
-    // Dry/wet blend
-    const float wet = mixNorm;
+    // Reverb: cavernous eerie tail
+    {
+        juce::dsp::Reverb::Parameters params;
+        params.roomSize   = 0.5f + spaceNorm * 0.5f;   // 0.5 – 1.0
+        params.damping    = 1.0f - decayNorm;           // high decay → long bright tail
+        params.wetLevel   = spaceNorm * 0.85f;
+        params.dryLevel   = 1.0f - params.wetLevel;
+        params.width      = 1.0f;
+        params.freezeMode = 0.0f;
+        reverb.setParameters(params);
+
+        juce::dsp::ProcessContextReplacing<float> reverbCtx(block);
+        reverb.process(reverbCtx);
+    }
+
+    // ── Global dry/wet blend ─────────────────────────────────────────────────
+
+    const float wet  = mixNorm;
     const float drym = 1.0f - wet;
     for (int ch = 0; ch < numCh; ++ch)
     {

@@ -32,13 +32,19 @@ private:
     DistortionAudioProcessor& proc;
     DistortionLookAndFeel laf;
 
+    // ── Distortion row ────────────────────────────────────────────────────
     LabeledKnob driveKnob, toneKnob, levelKnob, mixKnob;
     juce::ComboBox modeBox;
     juce::Label    modeLabel;
 
+    // Declared after knobs so attachments are destroyed first (before sliders)
     juce::AudioProcessorValueTreeState::SliderAttachment driveAtt, toneAtt, levelAtt, mixAtt;
-    // Created after items are added to modeBox
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modeAtt;
+
+    // ── Atmosphere row ────────────────────────────────────────────────────
+    LabeledKnob spaceKnob, decayKnob, driftKnob, hazeKnob;
+
+    juce::AudioProcessorValueTreeState::SliderAttachment spaceAtt, decayAtt, driftAtt, hazeAtt;
 
     void setupKnob(LabeledKnob&, const juce::String& name);
 
